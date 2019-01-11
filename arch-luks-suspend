@@ -38,11 +38,23 @@ umount_initramfs() {
     done
 }
 
-ext4_cryptdevice_mount_options() {
-    local mt="$(grep "^/dev/mapper/${1} " /proc/mounts | cut -d ' ' -f 3,4)"
-    if [[ "${mt:0:5}" == "ext4 " ]]; then
-        echo "${mt:5}"
-    fi
+find_blocking_filesystems() {
+    local cryptname="$1"
+    local p
+    for p in $(lsblk -nro PATH,FSTYPE "/dev/mapper/${cryptname}" | awk '/ext[34]$/ {print $1}'); do
+        local mt="$(grep "^${p} " /proc/mounts | cut -d ' ' -f 4)"
+        if ! [[ "$mt" == *nobarrier* || "$mt" == *barrier=0* ]]; then
+            echo "$p"
+        fi
+    done
+}
+
+remount_blocking_filesystems() {
+    local opts="$1" devices="${@:2}"
+    local dev
+    for dev in $devices; do
+        mount -o remount,$opts $dev
+    done
 }
 
 # Stop udev service and prevent it to be autostarted.
@@ -79,21 +91,16 @@ journald_service stop
 
 # Journalled ext4 filesystems in kernel versions 3.11+ will block suspend
 # if mounted with `barrier=1`, which is the default. Temporarily remount with
-# `barrier=0` if this is true of the crypt fs.
-MOUNT_OPTS="$(ext4_cryptdevice_mount_options "$CRYPTNAME")"
-if [[ "$MOUNT_OPTS" ]] && ! [[ "$MOUNT_OPTS" == *nobarrier* || "$MOUNT_OPTS" == *barrier=0* ]]; then
-    REMOUNT=1
-    mount -o remount,"$MOUNT_OPTS",barrier=0 /
-fi
+# `barrier=0` if this is true of any filesystems on the crypt device.
+BLOCKING_DEVICES=$(find_blocking_filesystems "$CRYPTNAME")
+remount_blocking_filesystems "barrier=0" "$BLOCKING_DEVICES"
 
 # Hand over execution to script inside initramfs
 cd "${INITRAMFS_DIR}"
 chroot . /suspend "$CRYPTNAME"
 
-# Restore original mount options if necessary
-if ((REMOUNT)); then
-    mount -o remount,"$MOUNT_OPTS",barrier=1 /
-fi
+# Restore original mount options
+remount_blocking_filesystems "barrier=1" "$BLOCKING_DEVICES"
 
 # Restart stopped services
 journald_service start
