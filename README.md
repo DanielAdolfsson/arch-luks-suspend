@@ -22,8 +22,7 @@ initcpio hook to provide access to the initramfs.
 Installation
 -------------
 
-1. Install this AUR package: https://aur.archlinux.org/packages/arch-luks-suspend-git/  
-   Alternatively, run `make install` as root.
+1. Install this package with `makepkg -i`, or alternatively, run `make install` as root.
 2. Edit `/etc/mkinitcpio.conf` and make sure the following hooks are enabled:
    `udev`, `encrypt`, `shutdown`, `suspend`.
 3. Rebuild the initramfs: `mkinitcpio -p linux`.

@@ -1,0 +1,29 @@
+post_install() {
+  echo -e'\e[31m'
+  echo 'To finish installing arch-luks-suspend you must:'
+  echo ''
+  echo '1) Enable the udev, encrypt, shutdown, and suspend hooks'
+  echo '   in /etc/mkinitcpio.conf and run `mkinitcpio -p linux`'
+  echo '2) Enable the arch-luks-suspend service with:'
+  echo '   `systemctl enable arch-luks-suspend.service`'
+  echo '3) Reboot'
+  echo -e '\e[39m'
+}
+
+post_upgrade() {
+  local newver="$1" oldver="$2"
+
+  if [[ "$newver" != "$oldver" ]]; then
+    local src='/usr/lib/arch-luks-suspend/initramfs-suspend'
+    local dst='/run/initramfs/suspend'
+    if [[ -e "$src" && -e "$dst" ]]; then
+      install -m755 "$src" "$dst"
+    else
+      echo -e '\e[31m'
+      echo '[ATTENTION] Reboot required to complete upgrade of arch-luk-suspend'
+      echo -e '\e[39m'
+    fi
+  fi
+}
+
+# vim:set ft=sh ts=2 sw=2 et:
