@@ -27,7 +27,8 @@ Installation
 2. Edit `/etc/mkinitcpio.conf` and make sure the following hooks are enabled:
    `udev`, `encrypt`, `shutdown`, `suspend`.
 3. Rebuild the initramfs: `mkinitcpio -p linux`.
-4. Reboot.
+4. Enable the service: `systemctl enable arch-luks-suspend.service`
+5. Reboot.
 
 
 Author and license
