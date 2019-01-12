@@ -10,7 +10,7 @@ a lot. One can use the `cryptsetup luksSuspend` command to freeze all I/O and
 flush the key from memory, but special care must be taken when applying it to
 the root device.
 
-The `arch-linux-suspend` script replaces the default suspend mechanism of
+The `arch-lux-suspend` script replaces the default suspend mechanism of
 systemd. It changes root to initramfs in order to perform the `luksSuspend`,
 actual suspend, and `luksResume` operations. It relies on the `shutdown`
 initcpio hook to provide access to the initramfs.
